@@ -96,7 +96,7 @@ def query_text():
         print(type(resp[0].docs[0].matches[0].text))
         # print((resp[0].docs[0].matches[0].uri))
         print(len(resp))
-        print(resp[0].docs[1])
+        print(resp[0].docs[0])
 
 
 @click.command()

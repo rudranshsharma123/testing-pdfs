@@ -1,0 +1,63 @@
+jtype: Flow                                 # this YAML file define the index flow, jtype is the YAML tag
+version: '1'
+with:
+  workspace: $JINA_WORKSPACE                       # we follow the version '1' YAML schema of Jina, details see https://docs.jina.ai/chapters/yaml/
+executors:                                       # each flow consists of several pods
+  - name: craft                           # in this example we will first segment the pdf into image chunks and page text chunks
+    uses: 'jinahub+docker://PDFSegmenter'
+    metas:
+      workspace: $JINA_WORKSPACE
+  - name: craftText
+    uses:
+      jtype: TextCrafter
+      metas:
+        py_modules:
+          - my_executors.py
+  - name: encodeText
+    uses:
+      jtype: TextEncoder
+      metas:
+        py_modules:
+          - my_executors.py
+  - name: textIndexer
+    uses:
+      jtype: DocVectorIndexer
+      with:
+        index_file_name: "text.json"
+      metas:
+        workspace: $JINA_WORKSPACE
+        py_modules:
+          - my_executors.py
+  - name: craftImage
+    uses:
+      jtype: ImageCrafter
+      metas:
+        workspace: $JINA_WORKSPACE
+        py_modules:
+          - my_executors.py
+    needs: craft
+  - name: encodeImage
+    uses:
+      jtype: ImageEncoder
+      metas:
+        py_modules:
+          - my_executors.py
+  - name: imageIndexer
+    uses:
+      jtype: DocVectorIndexer
+      with:
+        index_file_name: "image.json"
+      metas:
+        workspace: $JINA_WORKSPACE
+        py_modules:
+          - my_executors.py
+  - name: keyValueIndexer
+    uses:
+      jtype: KeyValueIndexer
+      metas:
+        workspace: $JINA_WORKSPACE
+        py_modules:
+          - my_executors.py
+    needs: craft
+  - name: joinAll
+    needs: [ textIndexer, imageIndexer, keyValueIndexer ]
